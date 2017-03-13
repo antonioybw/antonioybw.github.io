@@ -1,0 +1,260 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><meta name="author" content="Ben Wong,wenbinben@gmail.com"><title>Operating System Study Note · Bowen's Blog</title><meta name="description" content="Interprocess Communication
+
+IPC often classified applications as servers and clients style communications, where the client requests data and the serv"><meta name="keywords" content="Hexo,HTML,Ben,CSS,安卓,android,Linux,linuxdeepin"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="renderer" content="webkit"><link rel="short icon" href="/images/favicon.png" type="image/x-icon"><link rel="stylesheet" href="/css/style.css"><link rel="stylesheet" href="/css/blog_basic.css"><link rel="stylesheet" href="/css/font-awesome.min.css"><link rel="alternate" type="application/atom+xml" title="ATOM 1.0" href="/atom.xml"></head><body><div class="sidebar animated fadeInDown"><div class="logo-title"><div class="title"><img src="/images/santacruz3.jpg" style="width:200px;"><h4 title=""><a href="/">Bowen's Blog</a></h4><div class="description"><p>project display, resume, study notes, etc.</p></div></div></div><ul class="social-links"><li><a href="https://www.linkedin.com/in/bowen-yang-64b44969"><i class="fa fa-linkedin-square fa-lg"></i></a></li><li><a href="https://github.com/antonioybw"><i class="fa fa-github fa-lg"></i></a></li><li><a href="http://instagram.com/ybw_wby"><i class="fa fa-instagram fa-lg"></i></a></li><li><a href="http://weibo.com/5630773880"><i class="fa fa-weibo fa-lg"></i></a></li></ul><div class="footer"><a target="_blank" href="/"></a><span>Built blog on:  </span><a href="https://hexo.io"> Hexo</a><span>&</span><a href="https://pages.github.com"> Github Pages</a><div class="by_farbox"><a href="https://hexo.io/" target="_blank">Proudly published with Hexo&#65281;</a></div></div></div><div class="main"><div class="page-top animated fadeInDown"><div class="nav"><li><a href="/">首页</a></li><li><a href="/about">关于</a></li><li><a href="/resume">Resume</a></li><li><a href="/project">Project</a></li><li><a href="/archives">归档</a></li><li><a href="/tags">Tag</a></li><li><a href="/links">友链</a></li></div><div class="information"><div class="back_btn"><li><a onclick="window.history.go(-1)" class="fa fa-chevron-left"> </a></li></div><div class="avatar"><img src="/images/bowen.jpg"></div></div></div><div class="autopagerize_page_element"><div class="content"><div class="post-page"><div class="post animated fadeInDown"><div class="post-title"><h3><a>Operating System Study Note</a></h3></div><div class="post-content"><p><strong>Interprocess Communication</strong></p>
+<ul>
+<li>IPC often classified applications as servers and clients style communications, where the client requests data and the server responds to client requests.</li>
+<li><p>basic method:</p>
+<ul>
+<li>mailbox/message queue: like in the ARM architecture mailbox,  read and send msg to other cores by writing and reading. In projects, we use mailbox to generate interrupts to cores. we can actually use mailbox without interrupt, just write to mailbox and constantly check the msg queue to read and process the msg one by one according to the order they come in.</li>
+<li>Distinguish with intterupt! </li>
+<li><p>mailbox is hw , can use interrupt. interrupt other cores to deliver msg,    this can be enabled by writing to mailbox like in project, . Without mailbox, we can just interrrupt via shared memory (HW) and read them in queues     , like  use  SVC  0    to enable swi interrupt.</p>
+</li>
+<li><p>shared memory , multiple workers all operate on the same data.  have to payattention to data race and message corruption  (draw diagram).  </p>
+<ul>
+<li>easier to program, A: write to shared segment, signal B.    B: wait signal from A, read values from shared segment</li>
+<li>downsides: waste memory and context switch overhead is high</li>
+<li>One can also use polling in shared data, rather than interrupt: for interrupt driven, when cpu receive interrupt request, we process the interrupt by running the interrupt handler when an event need to be served ,like when a register is written. For polling driven, we need to read and check the status register/ memory location every so often until the status changes indicating that we have a request</li>
+<li>downsides of polling:<ul>
+<li>think like a state machine: send msg, wait for response, handle response</li>
+<li>responsiveness</li>
+</ul>
+</li>
+<li>upsides: simpler code and fewer bugs</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><strong>Scheduling</strong></p>
+<ul>
+<li>definition:<ul>
+<li>It is an approach to assign work (like thread, process, fibres ,data flows) to hardware resources like processors, memory etc.</li>
+</ul>
+</li>
+<li>why a problem:<ul>
+<li>we don’t know which thread/process is coming and which to process, cannot see future, process will change over time</li>
+</ul>
+</li>
+<li>goal:  <ul>
+<li>load balancing/ maximize CPU utilization (keep all computer resources busy, share resources effectively) </li>
+<li>minimize response time (from work enabled to execution)</li>
+<li>maximize throughput</li>
+<li>minimize latency (from being enabled to completion)</li>
+</ul>
+</li>
+<li><p>types:</p>
+<ul>
+<li><p>multi-level feedback queue: priority based, OS put thread/process on lists sorted by priority</p>
+<ul>
+<li>new process -&gt; high prority</li>
+<li>demote priority if bad(like use up CPU resource), small resources we promote</li>
+<li>problems: 1. staravation. 2.   game system? solution: OS periodically put all process to high priority</li>
+</ul>
+</li>
+<li><p>lottery scheduling: random and probability based: allocate resource randomly by distribute tickets , each process/thread are assigned some tickets (not unifomly, which solves starvation problem since everyone get at least one ticket), CPU random() to pick up a random ticket and see which to do.</p>
+<ul>
+<li>problems: how to distribute, non-uniformly-&gt; have priorities</li>
+</ul>
+</li>
+<li><p>gang scheduling : parallel and application based: run threads/process simultaneously on different processors.   that’s the real parallel, not like the context switch “act like” parrallel so it saves the overhead of context switch, see: <a href="http://www.informit.com/articles/article.aspx?p=26027&amp;seqNum=5" target="_blank" rel="external">http://www.informit.com/articles/article.aspx?p=26027&amp;seqNum=5</a></p>
+<ul>
+<li><p>feature: </p>
+<ul>
+<li><p>Groups of related threads are scheduled as a unit, a gang.</p>
+</li>
+<li><p>All members of a gang run simultaneously, on different timeshared CPUs.</p>
+</li>
+<li><p>All gang members start and end their time slices together.</p>
+</li>
+<li>process/thread will cooperate</li>
+<li>both time and space sharing: threads in one process -&gt; eliminate context switch overhead</li>
+<li>when one runs, they all run: Gang scheduling is used so that if two or more threads or processes communicate with each other, they will all be ready to communicate at the same time. </li>
+</ul>
+</li>
+</ul>
+</li>
+<li>affinity scheduling<ul>
+<li>need to moving a process from one core to another, then we need to first both write to memory and do the swith then write back</li>
+</ul>
+</li>
+<li>creech scheduling<ul>
+<li>it’s a future and today mechanism since we are having more and more cores, and each can run just one thread if possible, then “scheduling” become a load balancing problem. </li>
+<li>to decide which process to be assigned to which core: if this process is easy to parrallel, we can assign 5 cores that one. if not easy to parrallel, we assign one core for that process and run independently.    </li>
+</ul>
+</li>
+</ul>
+</li>
+<li>other issues: <ul>
+<li>multicore scheduling</li>
+<li>future scheduling: many cores, each has one thread? -&gt; become load balancing, control, optimization problem</li>
+</ul>
+</li>
+</ul>
+<p><strong>Context Swithcing</strong></p>
+<p>one process : many thread,<br>each process runs a different run a different program</p>
+<ul>
+<li>it simulates the parallel by constantly run each thead in one process in a short time and transfer to another.</li>
+<li>before a new thread is put into the processor, the old thread’s register file , including lr, sp, pc,  is saved to a secure,fixed address secure memory location, which is the place we can restore the context when we want to swith <ul>
+<li>each thread should have their own stack, so that each thread won’t step on and overwrite the data which will cause data lost.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Contexts: processes, threads=fibres</strong></p>
+<ul>
+<li>compared to early systems, how to use distributed one to process monolithic program?   (use IPC, IPC goal)</li>
+<li>sever and client (what they do?)</li>
+<li>past: IPC via overlaps in the memory images (easier than message processing) , why bad?<ul>
+<li>shared memory is kludgy</li>
+<li>waste memory</li>
+<li>context switch cost is high since different adrress</li>
+</ul>
+</li>
+<li>90s thread-aware, nowadays see process</li>
+<li>diagram for CPU - cache - memory</li>
+<li>diagram for two CPU -cache -memoryt</li>
+<li>data structures for process and thread</li>
+<li>Unix like <ul>
+<li>fork() and exec()    </li>
+</ul>
+</li>
+</ul>
+<p><strong>Synchronization</strong></p>
+<p><strong>Virtual Memeory</strong></p>
+<p><strong>Interrupt reentrance</strong></p>
+<ul>
+<li>definition: indication of an event in need of immediate attention, can be caused by hardware device and software, it simply stops what it’s doing, save the current state and run the handler to deal with the event, resume state, and jump back to original activity from interrupt.(we need to also clear interrupt when necessary in case that interrupt will keep reentring)</li>
+<li>example: external HW I/O, trap, TLB miss, etc.``</li>
+<li>we set up vector table to tell the jump address of the corresponding handlers for a specific interrupt </li>
+<li>for hardware: except for save PC value, save some state, we will turn on new mode for a handler like ARM we have IRQ, FIQ, SYS/USR  which have different priorities, </li>
+<li>FIQ mode is for fast interrupt which has hight priority and IRQ is for normal interrupt. FIQ often handle some critical resources and it can be introduced while another IRQ is being handled.</li>
+<li>so a IRQ can be interrupted by a FIQ which means in the middle of execution of interrupt handler, the interrupt can be called again before the previous invocation completed, once the new interrupt complete, the previous will resume correct execution. This will have the problem about access the same data. Solution for this include:<ul>
+<li>don’t share the data, we use different stack to save data</li>
+<li>wrap the access to the shared data: synchronization and lock-&gt; when accessing the data, the first one lock the data, modify it , then release the lock, the other thread who want to access data need to wait for the notification saying that lock is released then go on action.</li>
+<li>don’t use interrupt -&gt; use polling. CPU process events by checking shared memory/ status register to see if there’s events -&gt; no reentrance issue</li>
+</ul>
+</li>
+</ul>
+<p><strong>Time + how to manage it </strong></p>
+<ul>
+<li>system wide concept of now (system wide counter), why it’s good</li>
+<li>how timer works, why it’s good</li>
+<li>timeout queue (diagram)  why it’s good</li>
+</ul>
+<p><strong>Cache coherence in multiprocessor</strong></p>
+<ul>
+<li>what did they do when enter cache coherence</li>
+<li>main thing: A writes the shared data, B will see it relatively soon</li>
+<li>how it works</li>
+<li>about sequential consistency</li>
+<li>multiprocess/multicore scheduling issues   calculate time to execute</li>
+<li>cost of synchonization</li>
+<li>snooping   validate all others</li>
+<li>snarfing    update others</li>
+</ul>
+<p><strong>(minor)Toolchains, crosscompiling</strong></p>
+<p>###File System<br>(ppt begin at 14 in cs slides)<br><strong>Purpose</strong></p>
+<ul>
+<li>save to non-volatile memory</li>
+<li>store file for user</li>
+<li>give mechanism for searching a file(have a say about where is the file)</li>
+</ul>
+<p><strong>few questions about designing a file system </strong></p>
+<ul>
+<li>is there limitation on number of items</li>
+<li>what’s the size of item(fixed size, different size for different block)</li>
+<li>does the system know where the file store</li>
+<li>how to search file(by name, id, directory, location, size, type, contents, user-assigned characteristics)</li>
+</ul>
+<p><strong>BSD</strong><br>Unix file system (UFS; also called the Berkeley Fast File System, the BSD Fast File System or FFS) is a file system used by many Unix and Unix-like operating systems.<br>BSD is a branch of Unix File system, is newer than FFS<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div><div class="line">101</div><div class="line">102</div><div class="line">103</div><div class="line">104</div><div class="line">105</div><div class="line">106</div><div class="line">107</div><div class="line">108</div><div class="line">109</div><div class="line">110</div><div class="line">111</div><div class="line">112</div><div class="line">113</div><div class="line">114</div><div class="line">115</div><div class="line">116</div><div class="line">117</div><div class="line">118</div><div class="line">119</div><div class="line">120</div></pre></td><td class="code"><pre><div class="line">- Basics:</div><div class="line">	- have a name for each file and put them in a dictionary</div><div class="line">	- each file has its rwx(read, write, execution) permission for grouping and access manament</div><div class="line">	- the above serve as a name scheme</div><div class="line"></div><div class="line">- original Unix File System vs. Berkeley Fast File system</div><div class="line">	- problem of original</div><div class="line">		- blocks too small</div><div class="line">		- inodes far from data</div><div class="line">		- blocks of files are of random placement policy</div><div class="line">		- inodes have no file name</div><div class="line">	- improve FFS:</div><div class="line">		- larger blocks 4KB, 8KB</div><div class="line">		- reduce seek time -&gt; better performance by better file placement (therefore OS need to know the second storage scheduling algorithm for better performance```)</div><div class="line">			- inodes correspond to files</div><div class="line">			- inodes and data grouped together</div><div class="line"></div><div class="line">- original Architecture:</div><div class="line">![Alt text](./1463083450099.png)</div><div class="line">![Alt text](./1463085157398.png)</div><div class="line"></div><div class="line">-	</div><div class="line">	- superblock:(metadata of inodes):</div><div class="line">		- how big is the whole thing, (size)</div><div class="line">		- # of inodes</div><div class="line">		- pointer to head of inode freelist</div><div class="line">		- bad block list </div><div class="line">	- inode: </div><div class="line">		-  file type and access mode</div><div class="line">		- file size, owner, number of references, timestamp(create, modify, read, write), group ID,  # of physical blocks involved</div><div class="line">		- pointer (direct, indirect)</div><div class="line"></div><div class="line">- disk, magnetic platter, scheduling algorithm:</div><div class="line">	- disk architecture: multi-level magnetic platters and spindle,  armature mechanim with head for seeking, a platter is divided into blocks, blocks on the same direction form a sector</div><div class="line">	- seek: move head from track to another track, the time for that is not ignorable.</div><div class="line">	- scheduling algorithm (a secondary storage scheduling algorithm to determine the motion of the disk&apos;s arm and head in servicing read and write requests, most operations do multiple disk write)</div><div class="line">		- FCFS: first come first serve not godd</div><div class="line">		- SSTF/SSF: shortest seek time first   (greedy)</div><div class="line">		- SCAN: serve request based on track order</div><div class="line">		- SPTF: shortest positioning time first   (greedy)</div><div class="line">		</div><div class="line"></div><div class="line">**Log Structure**</div><div class="line">- Technology Trends</div><div class="line">	- I/O becoming more and more of a bottleneck</div><div class="line">	-  CPU speed increases faster than disk speed</div><div class="line">	- Big Memories: Caching improves read performance –  Most disk traffic are writes</div><div class="line"></div><div class="line">- Basic:  log-based, use a circular log structure, boost write throughput by writing sequential data to disk (append at end), inode of the data and the mapping are right after the data, no need for free block map  </div><div class="line">*cache only boost for read , not for write, this structure enhances write</div><div class="line"></div><div class="line">- improve compared to FFS</div><div class="line">	- disk bandwidth</div><div class="line">	- less moving head around, we write sequential data and  they can be batched into large sequential runs and costly seeks are kept to a minimum  (example about update data: when create and rewrite the data, we will also update the inode and mapping at the sametime, but the directory don&apos;t need to change once created.)</div><div class="line">	- Recovery from crashes is simpler. Upon its next mount, the file system does not need to walk all its data structures to fix any inconsistencies, but can reconstruct its state from the last consistent point in the log.</div><div class="line">	- better use cache: bigger cache also read and write coalesing</div><div class="line"></div><div class="line">- Downside:</div><div class="line">	- fragmentation and garbage collections:</div><div class="line">	When a segment is filled, LFS goes on to fill the next free or clean segment. Segments are said to be dirty if they contain live blocks, or blocks for which no newer copies exist further ahead in the log. The LFS garbage collector turns dirty segments into clean ones by copying live blocks from the dirty segment into the current segment and skipping the rest.</div><div class="line">	LFS becomes progressively less efficient as it nears maximum capacity, when the garbage collector has to run almost constantly to make clean segments available.</div><div class="line">	- chunk and collect policy: </div><div class="line">		- divide disk into chunks/segments  1MB</div><div class="line">		- if almost full, leave it</div><div class="line">		- if almost empty, garbage collect it</div><div class="line">	- On magnetic media, may make read very slow</div><div class="line">	- On flash, the seek time can be ignored</div><div class="line"></div><div class="line">	- garbage collection example:    if some segment is X% full</div><div class="line">		collect dada from N=ceiling (1/1-X) and write to N-1 segment to full =&gt; many operations</div><div class="line"></div><div class="line">**Caching in FFS**</div><div class="line">from block ID, do a hashing and find the slot in cache，(when full, need to abandon some) the slot contains a pointer to the node in the linked list , orderred by locked, LRU, AGE, free</div><div class="line">lock: things shouldn&apos;t be thrown away</div><div class="line">LRU: least recent use</div><div class="line">AGE:  moved from LRU</div><div class="line">free: list the free node</div><div class="line"></div><div class="line">**Flash File System**</div><div class="line">**YAFFS**</div><div class="line"> - log structure file system： log entries are chunks, containing data chunk and object header</div><div class="line"> - each chunk: object ID, block ID, byte count, deletion marker, serial number(version control, differentiate chunks with same obj ID and chunk ID)</div><div class="line"> - designed for NAND type flash</div><div class="line"> - granularity: chunk based (&gt; page, &lt; block)</div><div class="line"> - have objects, which contains a group of data files, directories and links(inodes for tracking),</div><div class="line"></div><div class="line">**YAFFS 2 vs YAFF1**</div><div class="line">- there&apos;s deletion mark and serial num for each chunk in YAFFS 2, every time we find the newest chunk, we see the newer serial num</div><div class="line">- but invalidate a chunk also require overwrite, so to have zero overwrite, there&apos;s no deletion mark, we create a sequential number for each chunk, the bigger the newer. Every time we reach full of the memory, we compare the tag of chunk(including the chunk ID, obj ID, block ID), if the same, we compare the sequence num. the smaller sequence is the old data , so should be erased.</div><div class="line"></div><div class="line">###Sys call</div><div class="line">(cs slide 2)</div><div class="line">it&apos;s a communication way for the computer program to request service from the kernel (can be some hardware usage)， usually the user&apos;s API to the HW.</div><div class="line"></div><div class="line">**why do we need/ purpose**</div><div class="line">-  request service from kernel and HW (disk, network, memory, cache, keyboard, other devices)</div><div class="line">-  protect OS from users (for example, use indirection of syscall numbers instead of direct kernel routine )</div><div class="line"></div><div class="line">**options**</div><div class="line">- function call</div><div class="line">	-  simple,fast</div><div class="line">	- not secure, exposed OS code to users (used in cases where users won&apos;t hog resources like embeded systems)</div><div class="line">- message passing (IPC)</div><div class="line">	- very secure, can be distributed via network</div><div class="line">	- kind of slow and complex, cannot send lots of data</div><div class="line">- trap</div><div class="line">	- basically SW cause an interrupt</div><div class="line">	- data transfer via memory, so fairly secure,  fast and very cheap to send lots of data</div><div class="line">	- context switch is slow</div><div class="line"></div><div class="line"></div><div class="line">**typical API / implementation**</div><div class="line">- open, create</div><div class="line">- read/write</div><div class="line">- close, delete</div><div class="line">- malloc</div><div class="line"></div><div class="line">**how args are passed**</div><div class="line">- if message passing, message indicate where args should be stored</div><div class="line">- if not, passed in registers or on stack, like our projects pass arguments to r0, r1 r2,</div></pre></td></tr></table></figure></p>
+<ul>
+<li>for Unix there’s known location as user struct.</li>
+</ul>
+<p><strong>HW, OS, APP syscall flow</strong><br>HW send interrupt to OS, OS trap it and send interrupt signal to APP, app trap it thru handler like SWI.<br><strong>what SW does</strong></p>
+<ul>
+<li>put syscall number to regs</li>
+<li>put args into regs and shared memory</li>
+<li>call trap instruction</li>
+<li>handler look into regs to find args to find function and args and return from exception</li>
+<li>back to APP for function execution.</li>
+</ul>
+<p>(see message passing, shared memory cs slides 6)<br><strong>message passing</strong> </p>
+<h3 id="Hypervisor"><a href="#Hypervisor" class="headerlink" title="Hypervisor"></a>Hypervisor</h3><p>Can be called the OS of OS, or the fake HW and it manages the execution of the guest OS<br>it have its higher privilege than the system level( HYP&gt; SYS&gt; USR)<br>it can protect itself and keep the system secure</p>
+<h3 id="Flash-physical-Disk-calculation"><a href="#Flash-physical-Disk-calculation" class="headerlink" title="Flash physical, Disk (calculation!!)"></a>Flash physical, Disk (calculation!!)</h3><p><strong>Flash</strong></p>
+<ul>
+<li>Basics:<ul>
+<li>flash doesn’t let you overwrite data (when you delete some data, you just invalidate them, and erase them on block granularity then write new data. For NAND gate, can only write gate from 1 to 0, or flush the whole block from 0 to 1)</li>
+<li>flash does best in large blocks </li>
+<li>flash require garbage collections</li>
+<li>flash requires wear leveling(all the cell written at the same frequency, i.e. die at the same time)</li>
+<li>granularity: blocks and pages. page: 4KB, 8KB, 16KB etc.    block: 64, 128, … pages</li>
+<li>read/write at page granularity, erase at block granularity</li>
+<li>write amplification feature: each cell can only be written around 500 times then die (need wear leveling)</li>
+<li>compare to disk: don’t have to write sequentially, lattice structure can </li>
+<li>flash type: NOR and NAND<ul>
+<li>NOR: less dense and faster, more expensive.</li>
+<li>NAND: more dense, cheapter, slower</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><strong>disk caculation</strong><br>e.g. min seek time= max seek time / # of tracks   (usually ms to us),  unit: us/per track seek<br>7200cmp<br>calcualate sector/us:   7200cmp /60/ 10^6   <em> # of sectors<br>sector/seek:    sector/us   </em>   min seek time  =&gt; sector per track seek</p>
+<h3 id="VM"><a href="#VM" class="headerlink" title="VM"></a>VM</h3><p>(ppt begin at 11 in cs slides)<br><strong>Why need VM</strong><br>When application run out of memory, need more room for data process, grab space from disk! Do swapping with the swap partition in disk, drop least recent use pages to disk and grab what we need from disk. Memory behaves like a big cache for disk.</p>
+<p><strong>virtual addr and physical addr mapping</strong><br>virtual addr is not the real memory addr, it represents like the index with its VPN. Page Table contains mapping from VA to PA. After transtlation to physical addr, we find the corresponding page for the data request.<br>Typically,</p>
+<ul>
+<li>PT: in memory, contains most recently/frequently use page mapping</li>
+<li>Swap partition: in disk, saves pages which were paged out from PT due to less use</li>
+<li>TLB: translation look aside buffer, a cache for translation, when translating, first look at TLB, if not found, go to page table</li>
+</ul>
+<p><strong>Translation Behaviour flow</strong></p>
+<ol>
+<li>basic : replace VPN with PFN</li>
+<li>look at TLB<ul>
+<li>find mapping -&gt; finish translation</li>
+<li>not found -&gt; TLB miss -&gt; go to PT</li>
+</ul>
+</li>
+<li>in PT<ul>
+<li>find mapping -&gt; save to TLB and finish translation</li>
+<li>not found -&gt; look at swap partition in disk</li>
+</ul>
+</li>
+</ol>
+<p><strong>architecture of PT</strong></p>
+<ul>
+<li>usually multi level, top level：<ul>
+<li>top level: root page table in physical space</li>
+<li>lower level: user PT and user addr space in virtual space</li>
+</ul>
+</li>
+</ul>
+<p><strong>with cache </strong></p>
+<ul>
+<li>TLB contains mapping for VPN and PFN, the cache containing the data is acutally separate from TLB</li>
+<li><p>the cache can put before TLB(virtual taged, virtual indexed), or after TLB( physical tagged, indexed)<br><img src="./1463181878157.png" alt="Alt text"></p>
+</li>
+<li><p>good for virtual addressed cache:  TLB not on critical path. Bad: but aliasing can exist in cache, which means two virtual addr map to the same phy addr (same data in separate space in cache). </p>
+</li>
+<li>bad for phy addressed: TLB on critical path, Good: no aliasing and No flushing of cache required</li>
+</ul>
+<p>-Another tradeoff method: virtual tagged, phy indexded</p>
+<ul>
+<li>how does OS know which process it is and distinguish the VA to give the right PFN? <ul>
+<li>define it’s not to be a problem SASOS (single addr space OS) </li>
+<li>brute force, flush the TLB and its cache on context switch</li>
+<li>add ASID (addr space ID to the TLB)<br><img src="./1463183892566.png" alt="Alt text"></li>
+</ul>
+</li>
+</ul>
+<p><strong>how to make smaller PT</strong></p>
+<ul>
+<li>inverted page table,   indexed by PFN (sorted) and build a hashtable for VPN</li>
+<li>dont’ have to look up linearly and compare one by one to find a VPN, use hashtable for looking up</li>
+</ul>
+<p><strong>OS structure</strong></p>
+<ul>
+<li>protection : VM guarantee the </li>
+<li>same virtual addr map to same physical addr: shared memory</li>
+<li>different application use same address space , more convienient for OS</li>
+</ul>
+</div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2017-03-12</span><i class="fa fa-tag"></i><a href="/tags/note/" title="note" class="tag">note </a><a href="/tags/OS/" title="OS" class="tag">OS </a></div></div></div></div><div class="share"><div class="evernote"> <a href="javascript:(function(){EN_CLIP_HOST='http://www.evernote.com';try{var%20x=document.createElement('SCRIPT');x.type='text/javascript';x.src=EN_CLIP_HOST+'/public/bookmarkClipper.js?'+(new%20Date().getTime()/100000);document.getElementsByTagName('head')[0].appendChild(x);}catch(e){location.href=EN_CLIP_HOST+'/clip.action?url='+encodeURIComponent(location.href)+'&amp;title='+encodeURIComponent(document.title);}})();" ref="nofollow" target="_blank" class="fa fa-bookmark"></a></div><div class="weibo"> <a href="javascript:void((function(s,d,e){try{}catch(e){}var f='http://service.weibo.com/share/share.php?',u=d.location.href,p=['url=',e(u),'&amp;title=',e(d.title),'&amp;appkey=2924220432'].join('');function a(){if(!window.open([f,p].join(''),'mb',['toolbar=0,status=0,resizable=1,width=620,height=450,left=',(s.width-620)/2,',top=',(s.height-450)/2].join('')))u.href=[f,p].join('');};if(/Firefox/.test(navigator.userAgent)){setTimeout(a,0)}else{a()}})(screen,document,encodeURIComponent));" class="fa fa-weibo"></a></div><div class="twitter"> <a href="http://twitter.com/home?status=,http://antonioybw.github.io/2017/03/12/operating-system-study-note/,Bowen's Blog,Operating System Study Note,;" class="fa fa-twitter"></a></div></div><div class="pagination"><ul class="clearfix"><li class="next pagbuttons"><a role="navigation" href="/2017/03/09/new-post-trial/" title="New Post Trial" class="btn">下一篇</a></li></ul></div></div></div></div></div><script src="/js/jquery.js"></script><script src="/js/jquery-migrate-1.2.1.min.js"></script><script src="/js/jquery.appear.js"></script></body></html>
